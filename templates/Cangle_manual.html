@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Cangle Manual</title>
+</head>
+<body>
+    <h1 style="font-size:40px; font-style:bold; text-align:center">Cangle Manual</h1>
+    <hr>
+    <h2 style="margin-left:25px; margin-bottom:0px">Available Query Commands:</h2>
+    <ul style="list-style-type:square; margin-left:25px; font-size:15px; margin-top:0px">
+        <li>Creating an Event</li>
+        <li>Obtaining Course ID</li>
+        <li>Course Events & Assignments Integration
+            <ul style="list-style-type:square; font-size:15px">
+                <li>All Assignments (/ Events) for the Course</li>
+                <li>All Assignments (/ Events) within a Specified Time Window</li>
+                <li>Specific Assignment (/ Event) Integration</li>
+            </ul>
+        </li>
+    </ul>
+    <h2 style="margin-left:25px; margin-top:0px">Command Formats:</h2>
+    <h3 style="margin-left:40px; margin-bottom:0px">Creating an Event</h3>
+    <p style="margin-left:50px; margin-top:0px">
+        command = create
+    </p>
+    <p style="margin-left:50px; margin-top:0px">
+        Please also specify the <i>title, start_date, start_time, end_date,</i> and <i>end_time</i>.
+    </p>
+    <h3 style="margin-left:40px; margin-bottom:0px">Obtaining Course ID</h3>
+    <p style="margin-left:50px; margin-top:0px">
+        command = course_id
+    </p>
+    <p style="margin-left:50px; margin-top:0px">
+        Please specify the <i>course_name</i> (should be the same as it appears on your canvas page).
+    </p>
+    <h3 style="margin-left:40px; margin-bottom:0px">Course Events & Assignment Integration</h3>
+    <p style="margin-left:50px; margin-top:0px">Default <i>event type</i> is assignment. If you wish to change <i>event type</i>
+        please specify <i><b>type =</b> assignment or event</i>. </p>
+    <p style="margin-left:50px">
+        command = integrate
+    </p>
+</body>
+</html>
