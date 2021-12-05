@@ -92,15 +92,15 @@ def integrate_all(course, type):
     #         end_at.append(assignments[i]['due_at'])
     #         start_at.append(assignments[i]['unlock_at'])
     # place info gathered into json form for google api
-    num = len(event_id)
-    summary = ['summary'] * num
-    location = ['location'] * num
-    start_info = ['start'] * num
-    end_info = ['end'] * num
-    start_time = ['dateTime'] * num
-    end_time = ['dateTime'] * num
-    time_zone = ['timeZone'] * num
-    return events_dic
+    # num = len(event_id)
+    # summary = ['summary'] * num
+    # location = ['location'] * num
+    # start_info = ['start'] * num
+    # end_info = ['end'] * num
+    # start_time = ['dateTime'] * num
+    # end_time = ['dateTime'] * num
+    # time_zone = ['timeZone'] * num
+    return event_title, start_at, end_at
 
 
 def integrate_win(course, start, end, type):
@@ -156,7 +156,7 @@ def canvas_google():
             if type == None:
                 type = 'assignment'
             if all_events:
-                hi = integrate_all(course_id, type)
+                name, start, end = integrate_all(course_id, type)
             else:
                 start = request.args.get('start')
                 end = request.args.get('end')
@@ -169,9 +169,6 @@ def canvas_google():
     if request.method == 'POST':
         if command == 'create':
             pass
-
-
-    # if request.method == 'POST':
 
 
 # Press the green button in the gutter to run the script.
