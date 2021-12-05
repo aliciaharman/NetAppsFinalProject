@@ -26,8 +26,30 @@ def get_course_id(name):
     return "404 Not Found"
 
 
-def integrate_one(event_name):
-    pass
+def integrate_one(event_name, course, type):
+    cal_parm = requests.structures.CaseInsensitiveDict()
+    cal_parm['all_events'] = '1'
+    cal_parm['context_codes[]'] = 'course_%s' %(course)
+    cal_parm['type'] = type
+    calendar_url = 'https://vt.instructure.com/api/v1/calendar_events'
+    r = requests.get(url=calendar_url, headers=get_header, params=cal_parm)
+    # format text returned
+    events_dic = json.loads(r.text)
+    start = 0
+    end = 0
+    location = None
+    # go through the list of dictionaries to get special id & title
+    for i in range(len(events_dic)):
+        if events_dic[i]['title'] == event_name:
+            if type == 'event':
+                start = events_dic[i]['start_at']
+                end = events_dic[i]['end_at']
+                location = events_dic[i]['location_name']
+            else:
+                start = events_dic[i]['assignment']['unlock_at']
+                end = events_dic[i]['assignment']['due_at']
+    event = {'summary': event_name, 'location': location, 'start': {'dateTime': start, 'timeZone': ''}}
+    return event
 
 
 # Utilize Canvas APi to get all relevant event information; return info in json format
@@ -56,22 +78,32 @@ def integrate_all(course, type):
         else:
             event_title.append(events_dic[i]['title'])
             event_id.append(events_dic[i]['assignment']['id'])
-    if type == 'assignment':
-        assignment_field = ['assignment_ids[]'] * len(event_id)
-        assignment_id = list(zip(assignment_field, event_id))
-        print(assignment_id)
-        assignment_url = 'https://vt.instructure.com/api/v1/courses/%s/assignments' %(course)
-        r = requests.get(url=assignment_url, headers=get_header, params=assignment_id)
-        due = []
-        # convert string to dictionary
-        assignments = json.loads(r.text)
-        for i in range(len(assignments)):
-            due.append(assignments[i]["due_at"])
+            end_at.append(events_dic[i]['assignment']['due_at'])
+            start_at.append(events_dic[i]['assignment']['unlock_at'])
+    # if type == 'assignment':
+    #     assignment_field = ['assignment_ids[]'] * len(event_id)
+    #     assignment_id = list(zip(assignment_field, event_id))
+    #     print(assignment_id)
+    #     assignment_url = 'https://vt.instructure.com/api/v1/courses/%s/assignments' %(course)
+    #     r = requests.get(url=assignment_url, headers=get_header, params=assignment_id)
+    #     # convert string to dictionary
+    #     assignments = json.loads(r.text)
+    #     for i in range(len(assignments)):
+    #         end_at.append(assignments[i]['due_at'])
+    #         start_at.append(assignments[i]['unlock_at'])
     # place info gathered into json form for google api
+    num = len(event_id)
+    summary = ['summary'] * num
+    location = ['location'] * num
+    start_info = ['start'] * num
+    end_info = ['end'] * num
+    start_time = ['dateTime'] * num
+    end_time = ['dateTime'] * num
+    time_zone = ['timeZone'] * num
     return events_dic
 
 
-def integrate_win(course, start, end):
+def integrate_win(course, start, end, type):
     pass
 
 
@@ -117,7 +149,7 @@ def canvas_google():
             name = request.args.get('course_name')
             course = get_course_id(name)
             return 'Course ID: ' + str(course)
-        elif command == 'integrate_all':
+        elif command == 'integrate':
             course_id = request.args.get('course_id')
             all_events = request.args.get('all_events')
             type = request.args.get('type')
@@ -130,9 +162,9 @@ def canvas_google():
                 end = request.args.get('end')
                 event_name = request.args.get('event_name')
                 if event_name == None:
-                    pass
+                    integrate_one(event_name, course_id, type)
                 else:
-                    pass
+                    integrate_win(course_id, start, end, type)
 
     if request.method == 'POST':
         if command == 'create':
