@@ -1,16 +1,25 @@
 # Network Application | Final Project
+from __future__ import print_function
 from flask import Flask, request, render_template
 from flask_httpauth import HTTPBasicAuth
 from pymongo import MongoClient
 import requests
 import json
 import servicesKeys as service
+import datetime
+import os.path
+from googleapiclient.discovery import build
+from google_auth_oauthlib.flow import InstalledAppFlow
+from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
 
 
 app = Flask(__name__)
 auth = HTTPBasicAuth()
 get_header = requests.structures.CaseInsensitiveDict()
 get_header["Authorization"] = 'Bearer ' + str(service.canvas_tok)
+
+SCOPES = ['https://www.googleapis.com/auth/calendar']
 
 def get_course_id(name):
     course_parm = requests.structures.CaseInsensitiveDict()
@@ -157,6 +166,37 @@ def canvas_google():
                 type = 'assignment'
             if all_events:
                 name, start, end = integrate_all(course_id, type)
+
+                creds = None
+    
+                # If there are no (valid) credentials available, let the user log in.
+                if not creds or not creds.valid:
+                    if creds and creds.expired and creds.refresh_token:
+                        creds.refresh(Request())
+                    else:
+                        flow = InstalledAppFlow.from_client_secrets_file(
+                        'credentials.json', SCOPES)
+                        creds = flow.run_local_server(port=0)
+                services = build('calendar', 'v3', credentials=creds)
+
+                for x in range(len(name)):
+                    event = {
+                        'summary' : name[x],
+                        'start' : {
+                                'dateTime' : start[x],
+                                'timeZone' : 'UTC',
+                            },
+                        'end' : {
+                                'dateTime' : end[x],
+                                'timeZone' : 'UTC',
+                            },
+                        }
+
+                    event = services.events().insert(calendarId='primary', body=event).execute()
+                    print('Event created')
+
+                return "Hello World"
+
             else:
                 start = request.args.get('start')
                 end = request.args.get('end')
