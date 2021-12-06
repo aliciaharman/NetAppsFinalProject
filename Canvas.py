@@ -235,7 +235,7 @@ def canvas_google():
             end = request.args.get('end')
             if ((event_name, start, end) != None):
                 create_event(event_name, start, end)
-                google_api(name, start, end)
+                google_api(event_name, start, end)
                 return "Event has been added."
             else:
                 return "Invalid: Missing a Field."

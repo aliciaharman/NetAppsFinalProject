@@ -19,26 +19,51 @@
             </ul>
         </li>
     </ul>
-    <h2 style="margin-left:25px; margin-top:0px">Command Formats:</h2>
-    <h3 style="margin-left:40px; margin-bottom:0px">Creating an Event</h3>
+    <h2 style="margin-left:25px; margin-top:0px; margin-bottom:0px">
+        Command Formats:
+    </h2>
+    <p style="margin-left:50px; margin-top:0px">
+        For all curl commands if you wish to indicate a <i>space</i> please replace the <i>space</i> with <b><i>%20</i></b>. If not curl will indicate a <b>Response 400 Error</b> has occurred.
+    </p>
+    <h3 style="margin-left:40px; margin-bottom:0px">
+        Creating an Event
+    </h3>
     <p style="margin-left:50px; margin-top:0px">
         command = create
     </p>
+    <p style="margin-left:50px; margin-top:0px; margin-bottom:0px">
+        Please also specify the <i>event_name, start</i> (format: YYYY-MM-DD) and <i>end</i> (format: YYYY-MM-DD).
+    </p>
     <p style="margin-left:50px; margin-top:0px">
-        Please also specify the <i>title, start_date, start_time, end_date,</i> and <i>end_time</i>.
+        <i><b>Note: The created event will be reflected in you personal Canvas Calendar and Google Calendar.</b></i>
     </p>
     <h3 style="margin-left:40px; margin-bottom:0px">Obtaining Course ID</h3>
     <p style="margin-left:50px; margin-top:0px">
         command = course_id
     </p>
-    <p style="margin-left:50px; margin-top:0px">
+    <p style="margin-left:50px; margin-top:0px; margin-bottom:0px">
         Please specify the <i>course_name</i> (should be the same as it appears on your canvas page).
+    </p>
+    <p style="margin-left:50px; margin-top:0px">
+        <i><b>Note: The course id of the course specified will be returned in Terminal or Browser.</b></i>
     </p>
     <h3 style="margin-left:40px; margin-bottom:0px">Course Events & Assignment Integration</h3>
     <p style="margin-left:50px; margin-top:0px">Default <i>event type</i> is assignment. If you wish to change <i>event type</i>
         please specify <i><b>type =</b> assignment or event</i>. </p>
     <p style="margin-left:50px">
         command = integrate
+    </p>
+    <p style="margin-left:50px; margin-top:0px; margin-bottom:0px">
+        To integrate all events for a particular course, specify <i>all_events</i>=1 and the <i>course_id</i>.
+    </p>
+    <p style="margin-left:50px; margin-top:0px; margin-bottom:0px">
+        To integrated course events within a specific window, specify the following fields: <i>course_id, start</i> (format: YYYY-MM-DD), and <i>end</i> (format: YYYY-MM-DD).
+    </p>
+    <p style="margin-left:50px; margin-top:0px; margin-bottom:0px">
+        To integrated one specific event, specify the <i>course_id</i> and <i>event_name</i> (as it appear on Canvas).
+    </p>
+    <p style="margin-left:50px; margin-top:0px">
+        <i><b>Note: The integrated event(s) will appear on your Google Calendar. Unless program indicates that something has gone wrong.</b></i>
     </p>
 </body>
 </html>
