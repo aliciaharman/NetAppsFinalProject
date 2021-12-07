@@ -9,6 +9,7 @@
 import sys
 import RPi.GPIO as GPIO
 import socket
+import time
 from flask import Flask, request
 
 app = Flask(__name__)
@@ -21,32 +22,31 @@ GPIO.setwarnings(False)
 GPIO.setmode(GPIO.BCM)
 LEDS = (r, g, b)
 GPIO.setup(LEDS, GPIO.OUT)
-GPIO.output(LEDS, False)
+GPIO.output(LEDS, (GPIO.HIGH, GPIO.HIGH, GPIO.HIGH)) # ready; white
 global client_ip, client_port, status
 
 
 def changeLED():
     global status
-    if status == 'ready': # white
-        GPIO.output(LEDS, (GPIO.HIGH, GPIO.HIGH, GPIO.HIGH))
-    elif status == 'failed': # red
+    if status == 'failed': # red
         GPIO.output(LEDS, (GPIO.HIGH, GPIO.LOW, GPIO.LOW))
+        time.sleep(2)
+        GPIO.output(LEDS, (GPIO.HIGH, GPIO.HIGH, GPIO.HIGH)) # ready; white
     elif status == 'performing': # blue
         GPIO.output(LEDS, (GPIO.LOW, GPIO.LOW, GPIO.HIGH))
     elif status == 'succeeded': # green
         GPIO.output(LEDS, (GPIO.LOW, GPIO.HIGH, GPIO.LOW))
     elif status == 'completed': # cyan
         GPIO.output(LEDS, (GPIO.LOW, GPIO.HIGH, GPIO.HIGH))
-    else:
-        GPIO.output(LEDS, False)
+        time.sleep(2)
+        GPIO.output(LEDS, (GPIO.HIGH, GPIO.HIGH, GPIO.HIGH)) # ready; white
 
 
 def main():
     global client_ip, client_port
-    if len(sys.argv) == 5:
-        if (sys.argv[1] == '-cip') and (sys.argv[3] == '-cp'):
-            client_ip = sys.argv[2]
-            client_port = sys.argv[4]
+    if (sys.argv[1] == '-cip') and (sys.argv[3] == '-cp'):
+        client_ip = sys.argv[2]
+        client_port = sys.argv[4]
 
 
 @app.route('/LED', methods=['POST'])

@@ -211,6 +211,7 @@ def manual(query):
 
 
 @app.route('/Cangle', methods=['GET', 'POST'])
+@auth.login_required
 def canvas_google():
     global client_ip, client_port, status
     status = 'performing'
