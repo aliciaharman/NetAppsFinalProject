@@ -11,7 +11,7 @@ from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
-import socket
+import sys
 
 
 app = Flask(__name__)
@@ -19,6 +19,14 @@ auth = HTTPBasicAuth()
 header = requests.structures.CaseInsensitiveDict()
 header["Authorization"] = 'Bearer ' + str(service.canvas_tok)
 user_id = '100667'
+global client_ip, client_port, status
+client_url = 'http://%s:%s/LED?status=%s' %(client_ip, client_port, status)
+
+def client_info():
+    global client_ip, client_port
+    if (sys.argv[1] == '-cip') and (sys.argv[3] == 'cp'):
+        client_ip = sys.argv[2]
+        client_port = int(sys.argv[4])
 
 def get_course_id(name):
     course_parm = requests.structures.CaseInsensitiveDict()
@@ -154,6 +162,7 @@ def google_api(name, start, end):
 # authenticate user
 @auth.verify_password
 def verify_password(username, password):
+    global client_ip, client_port, status
     client = MongoClient('localhost', 27017)
     db = client["Cangle"]
     collection = db["service_auth"]
@@ -161,14 +170,23 @@ def verify_password(username, password):
     doc = collection.find(user_entry) # locate query in database
     # validate and check cursor entry within the database for authentication
     if doc == None:
+        status = 'failed'
         doc.close() # delete and reallocate cursor resource
+        requests.post(url=client_url)
         return False
     else:
         for x in doc:
             user = x["username"]
             secret = x["password"]
             doc.close() # delete and reallocate cursor resource
-            return (user == username) and (secret == password)
+            if (user == username) and (secret == password):
+                status = 'succeeded'
+                requests.post(url=client_url)
+                return True
+            else:
+                status = 'failed'
+                requests.post(url=client_url)
+                return False
 
 
 # Authentication Error Handler
@@ -179,19 +197,31 @@ def auth_error(status):
 
 @app.route('/Cangle/<query>', methods=['GET'])
 def manual(query):
+    global client_ip, client_port, status
+    status = 'processing'
+    requests.post(url=client_url)
     if query == 'manual':
+        status = 'completed'
+        requests.post(url=client_url)
         return render_template('Cangle_manual.html')
     else:
+        status = 'completed'
+        requests.post(url=client_url)
         return '404 error: ', query, ' file not found'
 
 
 @app.route('/Cangle', methods=['GET', 'POST'])
 def canvas_google():
+    global client_ip, client_port, status
+    status = 'processing'
+    requests.post(url=client_url)
     command = request.args.get('command')
     if request.method == 'GET':
         if command == 'course_id':
             name = request.args.get('course_name')
             course = get_course_id(name)
+            status = 'completed'
+            requests.post(url=client_url)
             return 'Course ID: ' + str(course)
         elif command == 'integrate':
             course_id = request.args.get('course_id')
@@ -203,8 +233,12 @@ def canvas_google():
                 name, start, end = integrate_all(course_id, type)
                 if len(name) != 0:
                     google_api(name, start, end)
+                    status = 'completed'
+                    requests.post(url=client_url)
                     return "Events Have Been Added. Reload Google Calendar to confirm."
                 else:
+                    status = 'completed'
+                    requests.post(url=client_url)
                     return "No assignment/event(s) found. Please try again."
             else:
                 start = request.args.get('start')
@@ -214,18 +248,28 @@ def canvas_google():
                     name, start, end = integrate_one(event_name, course_id, type)
                     if len(start) != 0:
                         google_api(name, start, end)
+                        status = 'completed'
+                        requests.post(url=client_url)
                         return "%s Have Been Added" %event_name
                     else:
+                        status = 'completed'
+                        requests.post(url=client_url)
                         return "Unable to find assignment/event. Please try again."
                 else:
                     if (start == None) | (end == None):
+                        status = 'completed'
+                        requests.post(url=client_url)
                         return "Invalid Entry: Check Field Name and Values."
                     else:
                         name, start, end = integrate_win(course_id, start, end, type)
                         if len(name) != 0:
                             google_api(name, start, end)
+                            status = 'completed'
+                            requests.post(url=client_url)
                             return "Window of Events Have Been Added"
                         else:
+                            status = 'completed'
+                            requests.post(url=client_url)
                             return "No assignment/event(s) found. Please try again."
 
     if request.method == 'POST':
@@ -236,11 +280,16 @@ def canvas_google():
             if ((event_name, start, end) != None):
                 create_event(event_name, start, end)
                 google_api(event_name, start, end)
+                status = 'completed'
+                requests.post(url=client_url)
                 return "Event has been added."
             else:
+                status = 'completed'
+                requests.post(url=client_url)
                 return "Invalid: Missing a Field."
 
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
+    client_info()
     app.run(host='0.0.0.0', port=8081, debug=True)
