@@ -24,7 +24,7 @@ client_url = 'http://%s:%s/LED?status=%s' %(client_ip, client_port, status)
 
 def client_info():
     global client_ip, client_port
-    if (sys.argv[1] == '-cip') and (sys.argv[3] == 'cp'):
+    if (sys.argv[1] == '-cip') and (sys.argv[3] == '-cp'):
         client_ip = sys.argv[2]
         client_port = int(sys.argv[4])
 
@@ -198,7 +198,7 @@ def auth_error(status):
 @app.route('/Cangle/<query>', methods=['GET'])
 def manual(query):
     global client_ip, client_port, status
-    status = 'processing'
+    status = 'performing'
     requests.post(url=client_url)
     if query == 'manual':
         status = 'completed'
@@ -213,7 +213,7 @@ def manual(query):
 @app.route('/Cangle', methods=['GET', 'POST'])
 def canvas_google():
     global client_ip, client_port, status
-    status = 'processing'
+    status = 'performing'
     requests.post(url=client_url)
     command = request.args.get('command')
     if request.method == 'GET':

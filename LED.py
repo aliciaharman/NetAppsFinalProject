@@ -22,7 +22,7 @@ GPIO.setmode(GPIO.BCM)
 LEDS = (r, g, b)
 GPIO.setup(LEDS, GPIO.OUT)
 GPIO.output(LEDS, False)
-global client_ip, status
+global client_ip, client_port, status
 
 
 def changeLED():
@@ -42,10 +42,11 @@ def changeLED():
 
 
 def main():
-    global client_ip
+    global client_ip, client_port
     if len(sys.argv) == 5:
-        if sys.argv[1] == '-sip':
+        if (sys.argv[1] == '-cip') and (sys.argv[3] == '-cp'):
             client_ip = sys.argv[2]
+            client_port = sys.argv[4]
 
 
 @app.route('/LED', methods=['POST'])
@@ -57,6 +58,6 @@ def LED_post():
 
 
 if __name__ == '__main__':
-    global client_ip
+    global client_ip, client_port
     main()
-    app.run(host=client_ip, port=5000, debug=True)
+    app.run(host=client_ip, port=client_port, debug=True)
