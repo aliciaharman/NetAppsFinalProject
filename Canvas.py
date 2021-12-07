@@ -1,4 +1,3 @@
-# Network Application | Final Project
 from flask import Flask, request, render_template
 from flask_httpauth import HTTPBasicAuth
 from pymongo import MongoClient
@@ -12,6 +11,8 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 import sys
+import socket
+import time
 
 
 app = Flask(__name__)
@@ -19,8 +20,8 @@ auth = HTTPBasicAuth()
 header = requests.structures.CaseInsensitiveDict()
 header["Authorization"] = 'Bearer ' + str(service.canvas_tok)
 user_id = '100667'
+SCOPES = ['https://www.googleapis.com/auth/calendar']
 global client_ip, client_port, status
-client_url = 'http://%s:%s/LED?status=%s' %(client_ip, client_port, status)
 
 def client_info():
     global client_ip, client_port
@@ -159,6 +160,33 @@ def google_api(name, start, end):
         print('Event created')
 
 
+def google_api_create(name, start, end):
+    creds = None
+    # If there are no (valid) credentials available, let the user log in.
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+        else:
+            flow = InstalledAppFlow.from_client_secrets_file(
+                'credentials.json', SCOPES)
+            creds = flow.run_local_server(port=0)
+    services = build('calendar', 'v3', credentials=creds)
+
+    for x in range(len(name)):
+        event = {
+            'summary' : name[x],
+            'start' : {
+                'date' : start[x],
+                'timeZone' : 'UTC',
+            },
+            'end' : {
+                'date' : end[x],
+                'timeZone' : 'UTC',
+            },
+        }
+        event = services.events().insert(calendarId='primary', body=event).execute()
+        print('Event created')
+
 # authenticate user
 @auth.verify_password
 def verify_password(username, password):
@@ -172,6 +200,7 @@ def verify_password(username, password):
     if doc == None:
         status = 'failed'
         doc.close() # delete and reallocate cursor resource
+        client_url = 'http://%s:%s/LED?status=%s' %(client_ip, client_port, status)
         requests.post(url=client_url)
         return False
     else:
@@ -181,10 +210,12 @@ def verify_password(username, password):
             doc.close() # delete and reallocate cursor resource
             if (user == username) and (secret == password):
                 status = 'succeeded'
+                client_url = 'http://%s:%s/LED?status=%s' %(client_ip, client_port, status)
                 requests.post(url=client_url)
                 return True
             else:
                 status = 'failed'
+                client_url = 'http://%s:%s/LED?status=%s' %(client_ip, client_port, status)
                 requests.post(url=client_url)
                 return False
 
@@ -192,6 +223,9 @@ def verify_password(username, password):
 # Authentication Error Handler
 @auth.error_handler
 def auth_error(status):
+    status = 'failed'
+    client_url = 'http://%s:%s/LED?status=%s' %(client_ip, client_port, status)
+    requests.post(url=client_url)
     return "Access Denied Invalid Username or Password. ", status
 
 
@@ -199,13 +233,16 @@ def auth_error(status):
 def manual(query):
     global client_ip, client_port, status
     status = 'performing'
+    client_url = 'http://%s:%s/LED?status=%s' %(client_ip, client_port, status)
     requests.post(url=client_url)
     if query == 'manual':
         status = 'completed'
+        client_url = 'http://%s:%s/LED?status=%s' %(client_ip, client_port, status)
         requests.post(url=client_url)
         return render_template('Cangle_manual.html')
     else:
         status = 'completed'
+        client_url = 'http://%s:%s/LED?status=%s' %(client_ip, client_port, status)
         requests.post(url=client_url)
         return '404 error: ', query, ' file not found'
 
@@ -214,7 +251,9 @@ def manual(query):
 @auth.login_required
 def canvas_google():
     global client_ip, client_port, status
+    time.sleep(2)
     status = 'performing'
+    client_url = 'http://%s:%s/LED?status=%s' %(client_ip, client_port, status)
     requests.post(url=client_url)
     command = request.args.get('command')
     if request.method == 'GET':
@@ -222,6 +261,7 @@ def canvas_google():
             name = request.args.get('course_name')
             course = get_course_id(name)
             status = 'completed'
+            client_url = 'http://%s:%s/LED?status=%s' %(client_ip, client_port, status)
             requests.post(url=client_url)
             return 'Course ID: ' + str(course)
         elif command == 'integrate':
@@ -235,10 +275,12 @@ def canvas_google():
                 if len(name) != 0:
                     google_api(name, start, end)
                     status = 'completed'
+                    client_url = 'http://%s:%s/LED?status=%s' %(client_ip, client_port, status)
                     requests.post(url=client_url)
                     return "Events Have Been Added. Reload Google Calendar to confirm."
                 else:
                     status = 'completed'
+                    client_url = 'http://%s:%s/LED?status=%s' %(client_ip, client_port, status)
                     requests.post(url=client_url)
                     return "No assignment/event(s) found. Please try again."
             else:
@@ -250,15 +292,18 @@ def canvas_google():
                     if len(start) != 0:
                         google_api(name, start, end)
                         status = 'completed'
+                        client_url = 'http://%s:%s/LED?status=%s' %(client_ip, client_port, status)
                         requests.post(url=client_url)
                         return "%s Have Been Added" %event_name
                     else:
                         status = 'completed'
+                        client_url = 'http://%s:%s/LED?status=%s' %(client_ip, client_port, status)
                         requests.post(url=client_url)
                         return "Unable to find assignment/event. Please try again."
                 else:
                     if (start == None) | (end == None):
                         status = 'completed'
+                        client_url = 'http://%s:%s/LED?status=%s' %(client_ip, client_port, status)
                         requests.post(url=client_url)
                         return "Invalid Entry: Check Field Name and Values."
                     else:
@@ -266,10 +311,12 @@ def canvas_google():
                         if len(name) != 0:
                             google_api(name, start, end)
                             status = 'completed'
+                            client_url = 'http://%s:%s/LED?status=%s' %(client_ip, client_port, status)
                             requests.post(url=client_url)
                             return "Window of Events Have Been Added"
                         else:
                             status = 'completed'
+                            client_url = 'http://%s:%s/LED?status=%s' %(client_ip, client_port, status)
                             requests.post(url=client_url)
                             return "No assignment/event(s) found. Please try again."
 
@@ -280,17 +327,28 @@ def canvas_google():
             end = request.args.get('end')
             if ((event_name, start, end) != None):
                 create_event(event_name, start, end)
-                google_api(event_name, start, end)
+                google_api_create([event_name], [start], [end])
                 status = 'completed'
+                client_url = 'http://%s:%s/LED?status=%s' %(client_ip, client_port, status)
                 requests.post(url=client_url)
                 return "Event has been added."
             else:
                 status = 'completed'
+                client_url = 'http://%s:%s/LED?status=%s' %(client_ip, client_port, status)
                 requests.post(url=client_url)
                 return "Invalid: Missing a Field."
+            
+def get_ip():
+    global server_ip
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.connect(("8.8.8.8", 80))
+    server_ip = s.getsockname()[0]
+    s.close()
 
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
+    global client_ip, server_ip
+    get_ip()
     client_info()
-    app.run(host='0.0.0.0', port=8081, debug=True)
+    app.run(host=server_ip, port=8081, debug=True)
