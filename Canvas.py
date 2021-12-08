@@ -21,7 +21,7 @@ header = requests.structures.CaseInsensitiveDict()
 header["Authorization"] = 'Bearer ' + str(service.canvas_tok)
 user_id = '100667'
 SCOPES = ['https://www.googleapis.com/auth/calendar']
-global client_ip, client_port, status
+global client_ip, client_port, status, valid
 
 def client_info():
     global client_ip, client_port
@@ -187,10 +187,21 @@ def google_api_create(name, start, end):
         event = services.events().insert(calendarId='primary', body=event).execute()
         print('Event created')
 
+
+# Keep a log of user interactions with Cangle
+def Cangle_log(comm_type, user_ip, valid):
+    client = MongoClient('localhost', 27017)
+    db = client["Cangle"]
+    collection = db["logs"]
+    date = datetime.datetime.now().strftime("%Y.%m.%d %H:%M:%S")
+    document = {"Timestamp:": date, "Action:": comm_type, "Authenticated": valid, "User_IP": user_ip}
+    collection.insert(document)
+
+
 # authenticate user
 @auth.verify_password
 def verify_password(username, password):
-    global client_ip, client_port, status
+    global client_ip, client_port, status, valid
     client = MongoClient('localhost', 27017)
     db = client["Cangle"]
     collection = db["service_auth"]
@@ -200,8 +211,6 @@ def verify_password(username, password):
     if doc == None:
         status = 'failed'
         doc.close() # delete and reallocate cursor resource
-        client_url = 'http://%s:%s/LED?status=%s' %(client_ip, client_port, status)
-        requests.post(url=client_url)
         return False
     else:
         for x in doc:
@@ -212,21 +221,23 @@ def verify_password(username, password):
                 status = 'succeeded'
                 client_url = 'http://%s:%s/LED?status=%s' %(client_ip, client_port, status)
                 requests.post(url=client_url)
+                valid = True
                 return True
             else:
-                status = 'failed'
-                client_url = 'http://%s:%s/LED?status=%s' %(client_ip, client_port, status)
-                requests.post(url=client_url)
                 return False
 
 
 # Authentication Error Handler
 @auth.error_handler
-def auth_error(status):
+def auth_error():
+    global client_ip, client_port, status, valid
+    user_ip = request.remote_addr
     status = 'failed'
     client_url = 'http://%s:%s/LED?status=%s' %(client_ip, client_port, status)
     requests.post(url=client_url)
-    return "Access Denied Invalid Username or Password. ", status
+    valid = False
+    Cangle_log('null', user_ip, valid)
+    return "Access Denied Invalid Username or Password."
 
 
 @app.route('/Cangle/<query>', methods=['GET'])
@@ -250,7 +261,8 @@ def manual(query):
 @app.route('/Cangle', methods=['GET', 'POST'])
 @auth.login_required
 def canvas_google():
-    global client_ip, client_port, status
+    global client_ip, client_port, status, valid
+    user_ip = request.remote_addr
     time.sleep(2)
     status = 'performing'
     client_url = 'http://%s:%s/LED?status=%s' %(client_ip, client_port, status)
@@ -258,6 +270,7 @@ def canvas_google():
     command = request.args.get('command')
     if request.method == 'GET':
         if command == 'course_id':
+            Cangle_log(command, user_ip, valid)
             name = request.args.get('course_name')
             course = get_course_id(name)
             status = 'completed'
@@ -271,6 +284,7 @@ def canvas_google():
             if type == None:
                 type = 'assignment'
             if all_events != None:
+                Cangle_log('integrate_all', user_ip, valid)
                 name, start, end = integrate_all(course_id, type)
                 if len(name) != 0:
                     google_api(name, start, end)
@@ -288,6 +302,7 @@ def canvas_google():
                 end = request.args.get('end')
                 event_name = request.args.get('event_name')
                 if event_name != None:
+                    Cangle_log('integrate_one', user_ip, valid)
                     name, start, end = integrate_one(event_name, course_id, type)
                     if len(start) != 0:
                         google_api(name, start, end)
@@ -301,6 +316,7 @@ def canvas_google():
                         requests.post(url=client_url)
                         return "Unable to find assignment/event. Please try again."
                 else:
+                    Cangle_log('integrate_win', user_ip, valid)
                     if (start == None) | (end == None):
                         status = 'completed'
                         client_url = 'http://%s:%s/LED?status=%s' %(client_ip, client_port, status)
@@ -321,6 +337,7 @@ def canvas_google():
                             return "No assignment/event(s) found. Please try again."
 
     if request.method == 'POST':
+        Cangle_log(command, user_ip, valid)
         if command == 'create':
             event_name = request.args.get('event_name')
             start = request.args.get('start')
