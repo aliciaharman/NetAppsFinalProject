@@ -246,6 +246,7 @@ def manual(query):
     status = 'performing'
     client_url = 'http://%s:%s/LED?status=%s' %(client_ip, client_port, status)
     requests.post(url=client_url)
+    time.sleep(2)
     if query == 'manual':
         status = 'completed'
         client_url = 'http://%s:%s/LED?status=%s' %(client_ip, client_port, status)
