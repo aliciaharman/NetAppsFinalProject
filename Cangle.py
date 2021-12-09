@@ -23,12 +23,16 @@ user_id = '100667'
 SCOPES = ['https://www.googleapis.com/auth/calendar']
 global client_ip, client_port, status, valid
 
+
+# prompts for LED flask information
 def client_info():
     global client_ip, client_port
     if (sys.argv[1] == '-cip') and (sys.argv[3] == '-cp'):
         client_ip = sys.argv[2]
         client_port = int(sys.argv[4])
 
+
+# gets course id from canvas
 def get_course_id(name):
     course_parm = requests.structures.CaseInsensitiveDict()
     course_parm['enrollment_state'] = 'active'
@@ -43,6 +47,7 @@ def get_course_id(name):
     return "404 Not Found"
 
 
+# integrate just one event
 def integrate_one(event_name, course, type):
     cal_parm = requests.structures.CaseInsensitiveDict()
     cal_parm['all_events'] = '1'
@@ -67,7 +72,7 @@ def integrate_one(event_name, course, type):
     return [event_name], start, end
 
 
-# Utilize Canvas APi to get all relevant event information; return info in json format
+# Utilize Canvas APi to get all relevant event information; return info as lists [All Events for that course]
 def integrate_all(course, type):
     cal_parm = requests.structures.CaseInsensitiveDict()
     cal_parm['all_events'] = '1'
@@ -94,6 +99,7 @@ def integrate_all(course, type):
     return event_title, start_at, end_at
 
 
+# integrate all events within a specific window for a particular course
 def integrate_win(course, start, end, type):
     cal_parm = requests.structures.CaseInsensitiveDict()
     if course != None:
@@ -121,6 +127,7 @@ def integrate_win(course, start, end, type):
     return event_title, start_at, end_at
 
 
+# user creates and adds an event to their Canvas & Google Calendar
 def create_event(title, start, end):
     cal_parm = requests.structures.CaseInsensitiveDict()
     cal_parm['calendar_event[context_code]'] = 'User_%s' %(user_id)
@@ -240,6 +247,7 @@ def auth_error():
     return "Access Denied Invalid Username or Password."
 
 
+# Users can obtain the Cangle manual without authenticating
 @app.route('/Cangle/<query>', methods=['GET'])
 def manual(query):
     global client_ip, client_port, status
@@ -259,11 +267,12 @@ def manual(query):
         return '404 error: ', query, ' file not found'
 
 
+# authentication required for anyone who wants to access Cangle services
 @app.route('/Cangle', methods=['GET', 'POST'])
 @auth.login_required
 def canvas_google():
     global client_ip, client_port, status, valid
-    user_ip = request.remote_addr
+    user_ip = request.remote_addr # get querying user's ip for log
     time.sleep(2)
     status = 'performing'
     client_url = 'http://%s:%s/LED?status=%s' %(client_ip, client_port, status)
@@ -271,6 +280,7 @@ def canvas_google():
     command = request.args.get('command')
     if request.method == 'GET':
         if command == 'course_id':
+            # user is able to grab specific course id
             Cangle_log(command, user_ip, valid)
             name = request.args.get('course_name')
             course = get_course_id(name)
@@ -279,6 +289,7 @@ def canvas_google():
             requests.post(url=client_url)
             return 'Course ID: ' + str(course)
         elif command == 'integrate':
+            # event integrartion has 3 flavors: all, window, or specific individual event
             course_id = request.args.get('course_id')
             all_events = request.args.get('all_events')
             type = request.args.get('type')
@@ -336,7 +347,7 @@ def canvas_google():
                             client_url = 'http://%s:%s/LED?status=%s' %(client_ip, client_port, status)
                             requests.post(url=client_url)
                             return "No assignment/event(s) found. Please try again."
-
+    # POST will only indicated the user wants to create an event
     if request.method == 'POST':
         Cangle_log(command, user_ip, valid)
         if command == 'create':
@@ -344,6 +355,7 @@ def canvas_google():
             start = request.args.get('start')
             end = request.args.get('end')
             if ((event_name, start, end) != None):
+                # event added to canvas and google calendar
                 create_event(event_name, start, end)
                 google_api_create([event_name], [start], [end])
                 status = 'completed'
@@ -355,7 +367,9 @@ def canvas_google():
                 client_url = 'http://%s:%s/LED?status=%s' %(client_ip, client_port, status)
                 requests.post(url=client_url)
                 return "Invalid: Missing a Field."
-            
+
+
+# grabs the current pi's ip address instead of just returning 0.0.0.0
 def get_ip():
     global server_ip
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)

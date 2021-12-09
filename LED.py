@@ -43,6 +43,7 @@ def changeLED():
         GPIO.output(LEDS, (GPIO.HIGH, GPIO.HIGH, GPIO.HIGH)) # ready; white
 
 
+# get the ip address of the current pi
 def get_ip():
     global client_ip
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -51,6 +52,7 @@ def get_ip():
     s.close()
 
 
+# LED flask instance receiving from Cangle Service Pi
 @app.route('/LED', methods=['POST'])
 def LED_post():
     global status
